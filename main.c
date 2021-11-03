@@ -16,7 +16,7 @@ typedef struct {
 
 void init(Player*);
 void update(Player*);
-void draw(Player, Texture2D , Rectangle, Texture2D, Rectangle);
+void draw(Player, Texture2D , Rectangle, Texture2D, Rectangle, Texture2D, Rectangle, Texture2D, Rectangle);
 
 int main(void) {
     Player play;
@@ -35,6 +35,16 @@ int main(void) {
     int currentFrame_backward = 0;
     int framesCounter_backward = 0;
 
+    // Mario jumping forward
+    Texture2D mario_jumping_forward = LoadTexture("images/jumping_forward.png");
+    Rectangle frameRec_jumping_forward = { 1.0f, 1.0f, (float)mario_jumping_forward.width/1, (float)mario_jumping_forward.height };
+    int currentFrame_jumping = 0;
+    int framesCounter_jumping = 0;
+
+    // Mario jumping backward
+    Texture2D mario_jumping_backward = LoadTexture("images/jumping_backward.png");
+    Rectangle frameRec_jumping_backward = { 0.0f, 0.0f, (float)mario_jumping_backward.width/1, (float)mario_jumping_backward.height };
+
     // Speed ​​at which Mario's movement frames are switched
     int framesSpeed = 16;
 
@@ -46,15 +56,22 @@ int main(void) {
     // Main game loop
     while (!WindowShouldClose()) {  // Detect window close button or ESC key
 
-        if (IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x <= SCREEN_WIDTH) {
+        if ((IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0)&&(IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH)) {
+            framesCounter_forward = 0;
+            currentFrame_forward = 0;
+            frameRec_forward.x = (float)currentFrame_forward*(float)mario_forward.width/4;;
+        }
+
+        else if (IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x <= SCREEN_WIDTH) {
             framesCounter_forward++;
         }
         else if(IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0) {
             framesCounter_backward++;
         }
-        else if ((IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0)&&(IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH)) {
-            DrawTextureRec(mario_backward, frameRec_backward, play.Position, WHITE);
+        else if(IsKeyDown(KEY_UP) && (play.Position.y+play.Size.y >= 0)) {
+            framesCounter_jumping++;
         }
+
         else {
             framesCounter_forward = 0;
             currentFrame_forward = 0;
@@ -63,6 +80,12 @@ int main(void) {
             framesCounter_backward = 0;
             currentFrame_backward = 0;
             frameRec_backward.x = (float)currentFrame_backward*(float)mario_backward.width/4;
+
+            framesCounter_jumping = 0;
+            currentFrame_jumping = 0;
+            frameRec_jumping_forward.y = (float)currentFrame_jumping*(float)mario_jumping_forward.width/1;
+            frameRec_jumping_backward.y = (float)currentFrame_jumping*(float)mario_jumping_backward.width/1;
+
         }
 
         if (framesCounter_forward >= (60/framesSpeed)){
@@ -86,7 +109,8 @@ int main(void) {
         }
 
         update(&play);
-        draw(play, mario_forward, frameRec_forward, mario_backward, frameRec_backward);
+        draw(play, mario_forward, frameRec_forward, mario_backward, frameRec_backward, mario_jumping_forward, frameRec_jumping_forward,
+             mario_jumping_backward, frameRec_jumping_backward);
 
     }
 
@@ -122,14 +146,28 @@ void update (Player *play) {
     }
 }
 
-void draw (Player play, Texture2D mario_forward, Rectangle frameRec_forward, Texture2D mario_backward, Rectangle frameRec_backward) {
+void draw (Player play, Texture2D mario_forward, Rectangle frameRec_forward, Texture2D mario_backward,
+           Rectangle frameRec_backward, Texture2D mario_jumping_forward, Rectangle frameRec_jumping_forward,
+           Texture2D mario_jumping_backward, Rectangle frameRec_jumping_backward) {
+
     BeginDrawing();
 
     ClearBackground(RAYWHITE);
 
     char control;
 
-    if (IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH){
+    if ((IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0)&&(IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH)) {
+        DrawTextureRec(mario_forward, frameRec_forward, play.Position, WHITE);
+    }
+    else if ((IsKeyDown(KEY_UP) && play.Position.y+play.Size.y < SCREEN_HEIGHT) && (IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH)) {
+        DrawTextureRec(mario_jumping_forward, frameRec_jumping_forward, play.Position, WHITE);
+    }
+
+    else if ((IsKeyDown(KEY_UP) && play.Position.y+play.Size.y < SCREEN_HEIGHT) && (IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0)) {
+        DrawTextureRec(mario_jumping_backward, frameRec_jumping_forward, play.Position, WHITE);
+    }
+
+    else if (IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH){
         DrawTextureRec(mario_forward, frameRec_forward, play.Position, WHITE);
         control = 'r';
     }
@@ -138,10 +176,18 @@ void draw (Player play, Texture2D mario_forward, Rectangle frameRec_forward, Tex
         DrawTextureRec(mario_backward, frameRec_backward, play.Position, WHITE);
         control = 'l';
     }
-    else if ((IsKeyDown(KEY_LEFT) && play.Position.x+play.Size.x >= 0)&&(IsKeyDown(KEY_RIGHT) && play.Position.x+play.Size.x < SCREEN_WIDTH)) {
-        DrawTextureRec(mario_backward, frameRec_backward, play.Position, WHITE);
-        control = 'l';
+
+    else if (IsKeyDown(KEY_UP)){
+
+        if (play.Position.y+play.Size.y < SCREEN_HEIGHT && control == 'r'){
+        DrawTextureRec(mario_jumping_forward, frameRec_jumping_forward, play.Position, WHITE);
+        }
+
+        else if (play.Position.y+play.Size.y < SCREEN_HEIGHT && control == 'l'){
+        DrawTextureRec(mario_jumping_backward, frameRec_jumping_backward, play.Position, WHITE);
+        }
     }
+
     else{
         if(control == 'r'){
             DrawTextureRec(mario_forward, frameRec_forward, play.Position, WHITE);
@@ -153,5 +199,6 @@ void draw (Player play, Texture2D mario_forward, Rectangle frameRec_forward, Tex
             DrawTextureRec(mario_forward, frameRec_forward, play.Position, WHITE);
         }
     }
+
     EndDrawing();
 }
